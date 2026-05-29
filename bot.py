@@ -72,10 +72,10 @@ forgot_totp = pyotp.TOTP(
 )
 
 # =========================
-# VERIFIED USERS STORAGE
+# TEMP USER REQUEST STORAGE
 # =========================
 
-verified_users = {}
+pending_requests = {}
 
 # =========================
 # MESSAGE HANDLER
@@ -92,7 +92,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         text = update.message.text.strip().lower()
 
-        print("USER ID:", user_id)
+        print("USER:", user_id)
         print("MESSAGE:", text)
 
         # =========================
@@ -101,8 +101,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if user_id not in ALLOWED_USERS:
 
-            print("BLOCKED USER:", user_id)
-
             await update.message.reply_text(
                 "Access Denied ❌"
             )
@@ -110,89 +108,86 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         # =========================
-        # PASSCODE VERIFICATION
+        # CHECK PASSCODE
         # =========================
 
-        if user_id not in verified_users:
+        if user_id in pending_requests:
 
+            # User entered passcode
             if text == PASSCODE:
 
-                verified_users[user_id] = True
+                request_type = pending_requests[user_id]
 
-                await update.message.reply_text(
-                    "PassCode Verified ✅\n\nAvailable Commands:\n\nanna otp for recharge\nanna admin otp\nanna forgot password otp\nlogout"
-                )
+                # USER OTP
+                if request_type == "user_otp":
+
+                    otp = user_totp.now()
+
+                    await update.message.reply_text(
+                        f"User OTP: {otp}"
+                    )
+
+                # ADMIN OTP
+                elif request_type == "admin_otp":
+
+                    otp = admin_totp.now()
+
+                    await update.message.reply_text(
+                        f"Admin OTP: {otp}"
+                    )
+
+                # FORGOT PASSWORD OTP
+                elif request_type == "forgot_otp":
+
+                    otp = forgot_totp.now()
+
+                    await update.message.reply_text(
+                        f"Forgot Password OTP: {otp}"
+                    )
+
+                # Remove request after use
+                pending_requests.pop(user_id)
 
             else:
 
                 await update.message.reply_text(
-                    "Enter PassCode First"
+                    "Wrong PassCode ❌"
                 )
 
             return
 
         # =========================
-        # USER OTP
+        # ASK PASSCODE FOR EACH COMMAND
         # =========================
 
         if text == "anna otp for recharge":
 
-            otp = user_totp.now()
-
-            print("USER OTP:", otp)
+            pending_requests[user_id] = "user_otp"
 
             await update.message.reply_text(
-                f"User OTP: {otp}"
+                "Enter PassCode For User OTP"
             )
-
-        # =========================
-        # ADMIN OTP
-        # =========================
 
         elif text == "anna admin otp":
 
-            admin_otp = admin_totp.now()
-
-            print("ADMIN OTP:", admin_otp)
+            pending_requests[user_id] = "admin_otp"
 
             await update.message.reply_text(
-                f"Admin OTP: {admin_otp}"
+                "Enter PassCode For Admin OTP"
             )
-
-        # =========================
-        # FORGOT PASSWORD OTP
-        # =========================
 
         elif text == "anna forgot password otp":
 
-            forgot_otp = forgot_totp.now()
-
-            print("FORGOT OTP:", forgot_otp)
+            pending_requests[user_id] = "forgot_otp"
 
             await update.message.reply_text(
-                f"Forgot Password OTP: {forgot_otp}"
+                "Enter PassCode For Forgot Password OTP"
             )
-
-        # =========================
-        # LOGOUT
-        # =========================
-
-        elif text == "logout":
-
-            verified_users.pop(user_id, None)
-
-            await update.message.reply_text(
-                "Logged Out ❌"
-            )
-
-        # =========================
-        # HELP
-        # =========================
 
         else:
 
             await update.message.reply_text(
-                "Available Commands:\n\nanna otp for recharge\nanna admin otp\nanna forgot password otp\nlogout"
+                "Available Commands:\n\nanna otp for recharge\nanna admin otp\nanna forgot password otp"
             )
 
     except Exception as e:
