@@ -10,7 +10,7 @@ from telegram.ext import (
 )
 
 # =========================
-# BOT CONFIG
+# BOT TOKEN
 # =========================
 
 BOT_TOKEN = "8666526093:AAGSOaJuIof6JMlhGgOpd_hjyobcqRy2FB4"
@@ -19,7 +19,17 @@ BOT_TOKEN = "8666526093:AAGSOaJuIof6JMlhGgOpd_hjyobcqRy2FB4"
 # PASSCODE
 # =========================
 
-PASSCODE = "753159"
+PASSCODE = "1234"
+
+# =========================
+# ALLOWED TELEGRAM USERS
+# =========================
+
+ALLOWED_USERS = [
+    7958120091,
+    1234567890,
+    9876543210
+]
 
 # =========================
 # USER OTP SECRET
@@ -61,7 +71,7 @@ forgot_totp = pyotp.TOTP(
 )
 
 # =========================
-# USER SESSION STORAGE
+# VERIFIED USERS STORAGE
 # =========================
 
 verified_users = {}
@@ -81,11 +91,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         text = update.message.text.strip().lower()
 
-        print("USER:", user_id)
+        print("USER ID:", user_id)
         print("MESSAGE:", text)
 
         # =========================
-        # ASK FOR PASSCODE
+        # BLOCK UNKNOWN USERS
+        # =========================
+
+        if user_id not in ALLOWED_USERS:
+
+            print("BLOCKED USER:", user_id)
+
+            await update.message.reply_text(
+                "Access Denied ❌"
+            )
+
+            return
+
+        # =========================
+        # PASSCODE VERIFICATION
         # =========================
 
         if user_id not in verified_users:
@@ -95,7 +119,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 verified_users[user_id] = True
 
                 await update.message.reply_text(
-                    "PassCode Verified ✅\n\nNow send:\nanna otp for recharge\nanna admin otp\nanna forgot password otp"
+                    "PassCode Verified ✅\n\nAvailable Commands:\n\nanna otp for recharge\nanna admin otp\nanna forgot password otp\nlogout"
                 )
 
             else:
