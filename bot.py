@@ -19,7 +19,7 @@ BOT_TOKEN = "8666526093:AAGSOaJuIof6JMlhGgOpd_hjyobcqRy2FB4"
 # PASSCODE
 # =========================
 
-PASSCODE = "1234"
+PASSCODE = "753159"
 
 # =========================
 # USER OTP SECRET
