@@ -1,5 +1,6 @@
 import hashlib
 import pyotp
+
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -13,6 +14,12 @@ from telegram.ext import (
 # =========================
 
 BOT_TOKEN = "8666526093:AAGSOaJuIof6JMlhGgOpd_hjyobcqRy2FB4"
+
+# =========================
+# PASSCODE
+# =========================
+
+PASSCODE = "1234"
 
 # =========================
 # USER OTP SECRET
@@ -41,17 +48,23 @@ admin_totp = pyotp.TOTP(
 )
 
 # =========================
-# Master Forgot Password
+# FORGOT PASSWORD SECRET
 # =========================
 
 FORGOT_SECRET = "CLCMFLWTNL4GZV5IODEUYRY6A6YUI7V5"
 
-FORGOT_totp = pyotp.TOTP(
+forgot_totp = pyotp.TOTP(
     FORGOT_SECRET,
     digits=6,
     interval=30,
     digest=hashlib.sha1
 )
+
+# =========================
+# USER SESSION STORAGE
+# =========================
+
+verified_users = {}
 
 # =========================
 # MESSAGE HANDLER
@@ -64,9 +77,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.message is None:
             return
 
-        text = update.message.text.lower().strip()
+        user_id = update.effective_user.id
 
+        text = update.message.text.strip().lower()
+
+        print("USER:", user_id)
         print("MESSAGE:", text)
+
+        # =========================
+        # ASK FOR PASSCODE
+        # =========================
+
+        if user_id not in verified_users:
+
+            if text == PASSCODE:
+
+                verified_users[user_id] = True
+
+                await update.message.reply_text(
+                    "PassCode Verified ✅\n\nNow send:\nanna otp for recharge\nanna admin otp\nanna forgot password otp"
+                )
+
+            else:
+
+                await update.message.reply_text(
+                    "Enter PassCode First"
+                )
+
+            return
 
         # =========================
         # USER OTP
@@ -76,7 +114,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             otp = user_totp.now()
 
-            print("Current OTP:", otp)
+            print("USER OTP:", otp)
 
             await update.message.reply_text(
                 f"User OTP: {otp}"
@@ -97,27 +135,39 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         # =========================
-        # Master Forgot Password OTP
+        # FORGOT PASSWORD OTP
         # =========================
 
         elif text == "anna forgot password otp":
 
-            FORGOT_otp = FORGOT_totp.now()
+            forgot_otp = forgot_totp.now()
 
-            print("Master Forgot Password OTP OTP:", FORGOT_otp)
+            print("FORGOT OTP:", forgot_otp)
 
             await update.message.reply_text(
-                f"Admin OTP: {FORGOT_otp}"
+                f"Forgot Password OTP: {forgot_otp}"
             )
 
         # =========================
-        # HELP MESSAGE
+        # LOGOUT
+        # =========================
+
+        elif text == "logout":
+
+            verified_users.pop(user_id, None)
+
+            await update.message.reply_text(
+                "Logged Out ❌"
+            )
+
+        # =========================
+        # HELP
         # =========================
 
         else:
 
             await update.message.reply_text(
-                "Send: Wait"
+                "Available Commands:\n\nanna otp for recharge\nanna admin otp\nanna forgot password otp\nlogout"
             )
 
     except Exception as e:
